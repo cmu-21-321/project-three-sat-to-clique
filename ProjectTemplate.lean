@@ -1,1 +1,1 @@
-import ProjectTemplate.Basic
+import ProjectTemplate.SAT
