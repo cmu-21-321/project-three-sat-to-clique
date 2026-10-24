@@ -49,4 +49,11 @@ def Formula.Satisfied (formula : Formula) (assignment : Assignment) : Prop :=
 def Formula.Satisfiable (formula : Formula) : Prop :=
   ∃ assignment : Assignment, formula.Satisfied assignment
 
+-- A variable and its negation cannot both be true under the same assignment.
+lemma positive_and_negative_cannot_both_be_true
+    (assignment : Assignment) (var : Variable) :
+    ¬ (Literal.eval assignment (Literal.pos var) = true ∧
+       Literal.eval assignment (Literal.neg var) = true) := by
+  sorry
+
 end SAT

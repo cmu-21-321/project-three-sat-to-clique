@@ -18,4 +18,13 @@ def IsClique (Vertex : Type) (graph : SimpleGraph Vertex) (vertices : Finset Ver
 def HasClique (Vertex : Type) (graph : SimpleGraph Vertex) (k : Nat) : Prop :=
   ∃ vertices : Finset Vertex, IsClique Vertex graph vertices ∧ Finset.card vertices = k
 
+-- Any subset of a clique is also a clique.
+lemma subset_of_clique_is_clique
+    (Vertex : Type) (graph : SimpleGraph Vertex)
+    (smaller : Finset Vertex) (larger : Finset Vertex)
+    (subsetProof : smaller ⊆ larger)
+    (cliqueProof : IsClique Vertex graph larger) :
+    IsClique Vertex graph smaller := by
+  sorry
+
 end Clique
