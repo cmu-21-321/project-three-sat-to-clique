@@ -36,4 +36,19 @@ def exampleAssignment : Assignment :=
 #eval Literal.eval exampleAssignment (Literal.pos 2) -- true
 #eval Literal.eval exampleAssignment (Literal.neg 2) -- false
 
+-- A clause is satisfied if at least one literal is true.
+def Clause.Satisfied (clause : Clause) (assignment : Assignment) : Prop :=
+  Literal.eval assignment (clause 0) ||
+  Literal.eval assignment (clause 1) ||
+  Literal.eval assignment (clause 2) = true
+
+-- A formula is satisfied if every clause is satisfied.
+def Formula.Satisfied (formula : Formula)
+    (assignment : Assignment) : Prop :=
+  ∀ clause ∈ formula, clause.Satisfied assignment
+
+-- A formula is satisfiable if some assignment satisfies it.
+def Formula.Satisfiable (formula : Formula) : Prop :=
+  ∃ assignment : Assignment, formula.Satisfied assignment
+
 end SAT
