@@ -38,13 +38,11 @@ def exampleAssignment : Assignment :=
 
 -- A clause is satisfied if at least one literal is true.
 def Clause.Satisfied (clause : Clause) (assignment : Assignment) : Prop :=
-  Literal.eval assignment (clause 0) ||
-  Literal.eval assignment (clause 1) ||
-  Literal.eval assignment (clause 2) = true
+  ∃ position : Fin 3, Literal.eval assignment (clause position) = true
+
 
 -- A formula is satisfied if every clause is satisfied.
-def Formula.Satisfied (formula : Formula)
-    (assignment : Assignment) : Prop :=
+def Formula.Satisfied (formula : Formula) (assignment : Assignment) : Prop :=
   ∀ clause ∈ formula, clause.Satisfied assignment
 
 -- A formula is satisfiable if some assignment satisfies it.
