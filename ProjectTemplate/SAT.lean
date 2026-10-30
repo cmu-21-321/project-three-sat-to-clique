@@ -54,6 +54,25 @@ lemma positive_and_negative_cannot_both_be_true
     (assignment : Assignment) (var : Variable) :
     ¬ (Literal.eval assignment (Literal.pos var) = true ∧
        Literal.eval assignment (Literal.neg var) = true) := by
-  sorry
+  -- To prove the negation, assume both literals are true and derive False.
+  intro bothTrue
+
+  -- Extract the left side of the conjunction: the positive literal is true.
+  have positiveTrue : Literal.eval assignment (Literal.pos var) = true :=
+    And.left bothTrue
+
+  -- Extract the right side: the negative literal is also true.
+  have negativeTrue : Literal.eval assignment (Literal.neg var) = true :=
+    And.right bothTrue
+
+  -- Restate each assumption using the definition of literal evaluation.
+  change assignment var = true at positiveTrue
+  change (!(assignment var)) = true at negativeTrue
+
+  -- Replace assignment var with true in negativeTrue.
+  rw [positiveTrue] at negativeTrue
+
+  -- The impossible equality false = true proves False and finishes the proof.
+  contradiction
 
 end SAT
