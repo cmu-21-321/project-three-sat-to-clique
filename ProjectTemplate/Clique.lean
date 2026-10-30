@@ -25,6 +25,11 @@ lemma subset_of_clique_is_clique
     (subsetProof : smaller ⊆ larger)
     (cliqueProof : IsClique Vertex graph larger) :
     IsClique Vertex graph smaller := by
-  sorry
+    unfold IsClique
+    intro first second firstInSmaller secondInSmaller different
+    have firstInLarger : first ∈ larger := subsetProof firstInSmaller
+    have secondInLarger : second ∈ larger := subsetProof secondInSmaller
+    unfold IsClique at cliqueProof
+    exact cliqueProof first second firstInLarger secondInLarger different
 
 end Clique
