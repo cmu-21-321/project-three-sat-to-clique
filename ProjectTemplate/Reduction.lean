@@ -21,4 +21,18 @@ def literalAt (formula : SAT.Formula) (vertex : Vertex formula) : SAT.Literal :=
   -- Then, retrieve the literal at the vertex's position in that clause.
   clause (vertex.literalPosition)
 
+-- Two literals contradict each other when they refer to the same
+-- variable but have opposite signs.
+def Contradictory (first : SAT.Literal) (second : SAT.Literal) : Prop :=
+  match first, second with
+  | SAT.Literal.pos firstVar, SAT.Literal.neg secondVar =>
+      firstVar = secondVar
+  | SAT.Literal.neg firstVar, SAT.Literal.pos secondVar =>
+      firstVar = secondVar
+  | SAT.Literal.pos _, SAT.Literal.pos _ =>
+      False
+  | SAT.Literal.neg _, SAT.Literal.neg _ =>
+      False
+
+
 end Reduction
