@@ -34,5 +34,32 @@ def Contradictory (first : SAT.Literal) (second : SAT.Literal) : Prop :=
   | SAT.Literal.neg _, SAT.Literal.neg _ =>
       False
 
+lemma contradictory_symm {first second : SAT.Literal} (h : Contradictory first second) :
+    Contradictory second first := by
+  cases first <;> cases second <;> simp_all [Contradictory]
+
+/-- Two literals that are true under one assignment cannot contradict each other. -/
+lemma not_contradictory_of_eval_eq_true (assignment : SAT.Assignment)
+    {first second : SAT.Literal} (hfirst : SAT.Literal.eval assignment first = true)
+    (hsecond : SAT.Literal.eval assignment second = true) : ¬ Contradictory first second := by
+  intro hcontr
+  cases first <;> cases second <;> simp_all [Contradictory, SAT.Literal.eval]
+
+/-- Literal occurrences are adjacent when they lie in different clauses and do not contradict. -/
+def reductionGraph (formula : SAT.Formula) : SimpleGraph (Vertex formula) where
+  Adj first second := first.clauseIndex ≠ second.clauseIndex ∧
+    ¬ Contradictory (literalAt formula first) (literalAt formula second)
+  symm := by
+    constructor
+    intro first second h
+    exact ⟨h.1.symm, fun hcontr ↦ h.2 (contradictory_symm hcontr)⟩
+  loopless := by
+    constructor
+    intro vertex h
+    exact h.1 rfl
+
+lemma clauseIndex_ne_of_adj {formula : SAT.Formula} {first second : Vertex formula}
+    (h : (reductionGraph formula).Adj first second) : first.clauseIndex ≠ second.clauseIndex :=
+  h.1
 
 end Reduction
