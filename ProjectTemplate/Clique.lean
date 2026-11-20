@@ -4,7 +4,7 @@ namespace Clique
 
 -- SimpleGraph Vertex is Mathlib's type for an undirected graph
 -- with vertices of type Vertex and no edges from a vertex to itself.
--- graph.Adj first second states that two vertices are connected.
+-- graph.Adj first second means that two vertices are connected.
 
 -- A finite set of vertices is a clique if every two distinct vertices in that set are connected.
 def IsClique (Vertex : Type) (graph : SimpleGraph Vertex) (vertices : Finset Vertex) : Prop :=
