@@ -1,4 +1,5 @@
-import Mathlib
+import Mathlib.Tactic MinImports
+--lake exe cache get
 
 namespace SAT
 
@@ -54,3 +55,5 @@ lemma positive_and_negative_cannot_both_be_true (assignment : Assignment) (var :
   contradiction
 
 end SAT
+
+#min-imports
