@@ -1,4 +1,5 @@
-import Mathlib.Tactic MinImports
+import Mathlib
+import ImportGraph.Tools.MinImports
 --lake exe cache get
 
 namespace SAT
@@ -56,4 +57,4 @@ lemma positive_and_negative_cannot_both_be_true (assignment : Assignment) (var :
 
 end SAT
 
-#min-imports
+#min_imports
