@@ -67,21 +67,15 @@ lemma not_contradictory_of_eval_eq_true (assignment : SAT.Assignment)
       | neg b =>
           change a = b at hcontr
           subst b
-          change assignment a = true at hfirst
-          change (!assignment a) = true at hsecond
-          rw [hfirst] at hsecond
-          -- hsecond now says false = true.
-          cases hsecond
+          exact SAT.positive_and_negative_cannot_both_be_true
+            assignment a ⟨hfirst, hsecond⟩
   | neg a =>
       cases second with
       | pos b =>
           change a = b at hcontr
           subst b
-          change (!assignment a) = true at hfirst
-          change assignment a = true at hsecond
-          rw [hsecond] at hfirst
-          -- hfirst now says false = true.
-          cases hfirst
+          exact SAT.positive_and_negative_cannot_both_be_true
+            assignment a ⟨hsecond, hfirst⟩
       | neg b =>
           change False at hcontr
           exact False.elim hcontr
