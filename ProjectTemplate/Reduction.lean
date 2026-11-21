@@ -3,26 +3,19 @@ import ProjectTemplate.Clique
 
 namespace Reduction
 
--- Each vertex represents one literal occurrence in the formula.
--- Its clause index identifies a clause, and its literal position
--- identifies one of the three slots within that clause.
+-- Each vertex represents one literal occurrence in the formula by storing the
+-- clause index and the literal index in the clause
 structure Vertex (formula : SAT.Formula) where
-  -- A valid clause index, starting at 0.
   clauseIndex : Fin (List.length formula)
-  -- A position within the clause: 0, 1, or 2.
   literalPosition : Fin 3
-  -- Automatically provides a way to decide whether two vertices are equal.
   deriving DecidableEq
 
 -- Retrieve the literal represented by a vertex.
 def literalAt (formula : SAT.Formula) (vertex : Vertex formula) : SAT.Literal :=
-  -- First, retrieve the clause identified by the vertex.
   let clause : SAT.Clause := List.get formula (vertex.clauseIndex)
-  -- Then, retrieve the literal at the vertex's position in that clause.
   clause (vertex.literalPosition)
 
--- Two literals contradict each other when they refer to the same
--- variable but have opposite signs.
+-- Two literals contradict each other when they are the negation of the other
 def Contradictory (first : SAT.Literal) (second : SAT.Literal) : Prop :=
   match first, second with
   | SAT.Literal.pos firstVar, SAT.Literal.neg secondVar =>
@@ -34,25 +27,76 @@ def Contradictory (first : SAT.Literal) (second : SAT.Literal) : Prop :=
   | SAT.Literal.neg _, SAT.Literal.neg _ =>
       False
 
-lemma contradictory_symm {first second : SAT.Literal} (h : Contradictory first second) :
+-- Two if first contradicts second, second contradicts first
+lemma contradictory_symm {first second : SAT.Literal}
+    (h : Contradictory first second) :
     Contradictory second first := by
-  cases first <;> cases second <;> simp_all [Contradictory]
+  cases first with
+  | pos a =>
+      cases second with
+      | pos b =>
+          change False at h
+          exact False.elim h
+      | neg b =>
+          change a = b at h
+          change b = a
+          exact Eq.symm h
+  | neg a =>
+      cases second with
+      | pos b =>
+          change a = b at h
+          change b = a
+          exact Eq.symm h
+      | neg b =>
+          change False at h
+          exact False.elim h
 
--- Two literals that are true under one assignment cannot contradict each other.
+-- Two literals do not contradict each other and can be connected in the graph.
 lemma not_contradictory_of_eval_eq_true (assignment : SAT.Assignment)
-    {first second : SAT.Literal} (hfirst : SAT.Literal.eval assignment first = true)
-    (hsecond : SAT.Literal.eval assignment second = true) : ¬ Contradictory first second := by
+    {first second : SAT.Literal}
+    (hfirst : SAT.Literal.eval assignment first = true)
+    (hsecond : SAT.Literal.eval assignment second = true) :
+    ¬ Contradictory first second := by
   intro hcontr
-  cases first <;> cases second <;> simp_all [Contradictory, SAT.Literal.eval]
+  cases first with
+  | pos a =>
+      cases second with
+      | pos b =>
+          change False at hcontr
+          exact False.elim hcontr
+      | neg b =>
+          change a = b at hcontr
+          subst b
+          change assignment a = true at hfirst
+          change (!assignment a) = true at hsecond
+          rw [hfirst] at hsecond
+          -- hsecond now says false = true.
+          cases hsecond
+  | neg a =>
+      cases second with
+      | pos b =>
+          change a = b at hcontr
+          subst b
+          change (!assignment a) = true at hfirst
+          change assignment a = true at hsecond
+          rw [hsecond] at hfirst
+          -- hfirst now says false = true.
+          cases hfirst
+      | neg b =>
+          change False at hcontr
+          exact False.elim hcontr
 
--- Literal occurrences are adjacent when they lie in different clauses and do not contradict.
+-- Literal occurrences are adjacent when they are from different clauses and don't contradict.
 def reductionGraph (formula : SAT.Formula) : SimpleGraph (Vertex formula) where
+  -- Define rule for adjacency.
   Adj first second := first.clauseIndex ≠ second.clauseIndex ∧
     ¬ Contradictory (literalAt formula first) (literalAt formula second)
+  -- Proof that adjacency is symmetric.
   symm := by
     constructor
     intro first second h
     exact ⟨h.1.symm, fun hcontr ↦ h.2 (contradictory_symm hcontr)⟩
+  -- Proof that no vertex is adjacent to itself.
   loopless := by
     constructor
     intro vertex h
