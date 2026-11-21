@@ -57,14 +57,12 @@ theorem exists_clique_of_satisfied
     ⟨positions, hpositions⟩
   let choose : Fin formula.length → Vertex formula :=
     fun i ↦ ⟨i, positions i⟩
-
   have hinj : Function.Injective choose := by
     intro i j heq
     have hindices :
         (choose i).clauseIndex = (choose j).clauseIndex := by
       exact congrArg Vertex.clauseIndex heq
     exact hindices
-
   apply Exists.intro (Finset.univ.image choose)
   constructor
   · simpa [choose] using
