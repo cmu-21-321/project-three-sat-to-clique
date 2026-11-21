@@ -91,17 +91,18 @@ def reductionGraph (formula : SAT.Formula) : SimpleGraph (Vertex formula) where
   -- Define rule for adjacency.
   Adj first second := first.clauseIndex ≠ second.clauseIndex ∧
     ¬ Contradictory (literalAt formula first) (literalAt formula second)
-  -- Proof that adjacency is symmetric.
+  -- Proof that adjacency is symmetric. ∀ first second, Adj first second → Adj second first
   symm := by
     constructor
     intro first second h
     exact ⟨h.1.symm, fun hcontr ↦ h.2 (contradictory_symm hcontr)⟩
-  -- Proof that no vertex is adjacent to itself.
+  -- Proof that no vertex is adjacent to itself. ∀ vertex, ¬ Adj vertex vertex
   loopless := by
     constructor
     intro vertex h
     exact h.1 rfl
 
+-- If two vertices are connected they come from different clauses
 lemma clauseIndex_ne_of_adj {formula : SAT.Formula} {first second : Vertex formula}
     (h : (reductionGraph formula).Adj first second) : first.clauseIndex ≠ second.clauseIndex :=
   h.1
