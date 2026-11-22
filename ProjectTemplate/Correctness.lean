@@ -9,6 +9,13 @@ whose size is the number of clauses.
 
 namespace Reduction
 
+/-!
+## Forward direction: satisfiable formula implies a clique
+
+Choose a true literal from each clause to construct a clique whose size
+is the number of clauses.
+-/
+
 -- A satisfying assignment lets us choose a true literal in every clause.
 lemma exists_true_literal_positions
     (formula : SAT.Formula) (assignment : SAT.Assignment)
@@ -26,16 +33,16 @@ lemma exists_true_literal_positions
   exact Classical.axiomOfChoice hclause
 
 -- The chosen true literal occurrences form a clique.
-lemma isClique_range_of_eval_eq_true
+lemma isClique_image_of_eval_eq_true
     (formula : SAT.Formula) (assignment : SAT.Assignment)
     (positions : Fin formula.length → Fin 3)
     (h : ∀ i, SAT.Literal.eval assignment
       (formula.get i (positions i)) = true) :
-    (reductionGraph formula).IsClique
-      (Set.range fun i ↦ (⟨i, positions i⟩ : Vertex formula)) := by
-  intro first hfirst second hsecond hne
-  rcases hfirst with ⟨i, hi⟩
-  rcases hsecond with ⟨j, hj⟩
+    Clique.IsClique (Vertex formula) (reductionGraph formula)
+      (Finset.univ.image fun i ↦ (⟨i, positions i⟩ : Vertex formula)) := by
+  intro first second hfirst hsecond hne
+  rcases Finset.mem_image.mp hfirst with ⟨i, _, hi⟩
+  rcases Finset.mem_image.mp hsecond with ⟨j, _, hj⟩
   subst first
   subst second
   constructor
@@ -50,8 +57,8 @@ lemma isClique_range_of_eval_eq_true
 theorem exists_clique_of_satisfied
     (formula : SAT.Formula) (assignment : SAT.Assignment)
     (h : formula.Satisfied assignment) :
-    ∃ vertices,
-      (reductionGraph formula).IsNClique formula.length vertices := by
+    Clique.HasClique (Vertex formula)
+      (reductionGraph formula) formula.length := by
   classical
   rcases exists_true_literal_positions formula assignment h with
     ⟨positions, hpositions⟩
@@ -66,28 +73,36 @@ theorem exists_clique_of_satisfied
   apply Exists.intro (Finset.univ.image choose)
   constructor
   · simpa [choose] using
-      isClique_range_of_eval_eq_true
+      isClique_image_of_eval_eq_true
         formula assignment positions hpositions
   · rw [Finset.card_image_of_injective _ hinj]
     simp
 
+/-!
+## Backward direction: a clique implies a satisfiable formula
+
+Use a clique whose size is the number of clauses to construct an assignment
+that satisfies every clause.
+-/
+
 -- A clique contains at most one vertex from each clause.
 lemma clauseIndex_injOn_of_isClique
     {formula : SAT.Formula} {vertices : Finset (Vertex formula)}
-    (h : (reductionGraph formula).IsClique vertices) :
+    (h : Clique.IsClique (Vertex formula) (reductionGraph formula) vertices) :
     Set.InjOn Vertex.clauseIndex (vertices : Set (Vertex formula)) := by
   intro first hfirst second hsecond heq
   by_contra hne
   have hadj : (reductionGraph formula).Adj first second := by
-    exact h hfirst hsecond hne
+    exact h first second hfirst hsecond hne
   have hindices : first.clauseIndex ≠ second.clauseIndex := by
     exact clauseIndex_ne_of_adj hadj
   exact hindices heq
 
 -- A clique with as many vertices as clauses meets every clause.
-lemma exists_vertex_of_isNClique
+lemma exists_vertex_of_isClique_of_card_eq
     {formula : SAT.Formula} {vertices : Finset (Vertex formula)}
-    (h : (reductionGraph formula).IsNClique formula.length vertices)
+    (h : Clique.IsClique (Vertex formula) (reductionGraph formula) vertices)
+    (hcard : vertices.card = formula.length)
     (i : Fin formula.length) :
     ∃ vertex ∈ vertices, vertex.clauseIndex = i := by
   -- Every vertex's clause index belongs to the set of all clause indices.
@@ -98,10 +113,10 @@ lemma exists_vertex_of_isNClique
     exact Finset.mem_univ vertex.clauseIndex
   have hinj : Set.InjOn Vertex.clauseIndex
       (vertices : Set (Vertex formula)) := by
-    exact clauseIndex_injOn_of_isClique h.isClique
+    exact clauseIndex_injOn_of_isClique h
   have hsize :
       (Finset.univ : Finset (Fin formula.length)).card ≤ vertices.card := by
-    rw [h.card_eq]
+    rw [hcard]
     simp
   -- An injection between these equally sized finite sets is surjective.
   have hsurj : Set.SurjOn Vertex.clauseIndex
@@ -119,7 +134,7 @@ def assignmentFromClique (formula : SAT.Formula)
 -- Every selected literal is true under this assignment.
 lemma eval_assignmentFromClique_eq_true
     {formula : SAT.Formula} {vertices : Finset (Vertex formula)}
-    (h : (reductionGraph formula).IsClique vertices)
+    (h : Clique.IsClique (Vertex formula) (reductionGraph formula) vertices)
     {vertex : Vertex formula} (hvertex : vertex ∈ vertices) :
     SAT.Literal.eval (assignmentFromClique formula vertices)
       (literalAt formula vertex) = true := by
@@ -144,7 +159,7 @@ lemma eval_assignmentFromClique_eq_true
           rw [hlit] at hpos
           cases hpos
         have hadj : (reductionGraph formula).Adj other vertex := by
-          exact h hother hvertex hne
+          exact h other vertex hother hvertex hne
         have hcompatible :
             ¬ Contradictory (literalAt formula other)
               (literalAt formula vertex) := by
@@ -160,57 +175,40 @@ lemma eval_assignmentFromClique_eq_true
 
 -- Every clause contains a selected literal, and that literal is true.
 theorem satisfiable_of_exists_clique (formula : SAT.Formula)
-    (h : ∃ vertices,
-      (reductionGraph formula).IsNClique formula.length vertices) :
+    (h : Clique.HasClique (Vertex formula)
+      (reductionGraph formula) formula.length) :
     formula.Satisfiable := by
-  rcases h with ⟨vertices, hvertices⟩
+  rcases h with ⟨vertices, hvertices, hcard⟩
   use assignmentFromClique formula vertices
   intro clause hclause
   -- Find this clause's index in the formula.
   rcases List.mem_iff_get.mp hclause with ⟨i, hi⟩
   subst clause
   -- Find the clique's vertex in that clause.
-  rcases exists_vertex_of_isNClique hvertices i with
+  rcases exists_vertex_of_isClique_of_card_eq hvertices hcard i with
     ⟨vertex, hvertex, hindex⟩
   use vertex.literalPosition
   have htrue :
       SAT.Literal.eval (assignmentFromClique formula vertices)
         (literalAt formula vertex) = true := by
-    exact eval_assignmentFromClique_eq_true hvertices.isClique hvertex
+    exact eval_assignmentFromClique_eq_true hvertices hvertex
   simpa [literalAt, hindex] using htrue
 
--- Combine the forward and reverse directions.
+/-!
+## Combining both directions: correctness of the reduction
+
+-/
+
+-- Combine the forward and backward directions.
 theorem satisfiable_iff_exists_clique (formula : SAT.Formula) :
     formula.Satisfiable ↔
-      ∃ vertices,
-        (reductionGraph formula).IsNClique formula.length vertices := by
+      Clique.HasClique (Vertex formula)
+        (reductionGraph formula) formula.length := by
   constructor
   · intro hsatisfied
     rcases hsatisfied with ⟨assignment, hassignment⟩
     exact exists_clique_of_satisfied formula assignment hassignment
   · intro hclique
     exact satisfiable_of_exists_clique formula hclique
-
--- Express the same result using the project's HasClique definition.
-theorem satisfiable_iff_hasClique (formula : SAT.Formula) :
-    formula.Satisfiable ↔
-      Clique.HasClique (Vertex formula)
-        (reductionGraph formula) formula.length := by
-  rw [satisfiable_iff_exists_clique]
-  constructor
-  · intro hexists
-    rcases hexists with ⟨vertices, h⟩
-    use vertices
-    constructor
-    · intro first second hfirst hsecond hne
-      exact h.isClique hfirst hsecond hne
-    · exact h.card_eq
-  · intro hexists
-    rcases hexists with ⟨vertices, hclique, hcard⟩
-    apply Exists.intro vertices
-    constructor
-    · intro first hfirst second hsecond hne
-      exact hclique first second hfirst hsecond hne
-    · exact hcard
 
 end Reduction
