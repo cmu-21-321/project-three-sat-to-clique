@@ -98,7 +98,7 @@ lemma clauseIndex_injOn_of_isClique
     exact clauseIndex_ne_of_adj hadj
   exact hindices heq
 
--- A clique with as many vertices as clauses meets every clause.
+-- A clique with as many vertices as clauses matches every clause.
 lemma exists_vertex_of_isClique_of_card_eq
     {formula : SAT.Formula} {vertices : Finset (Vertex formula)}
     (h : Clique.IsClique (Vertex formula) (reductionGraph formula) vertices)
@@ -126,7 +126,7 @@ lemma exists_vertex_of_isClique_of_card_eq
       Vertex.clauseIndex hmaps hinj hsize
   exact hsurj (Finset.mem_univ i)
 
--- A variable is true exactly when a positive occurrence is selected.
+-- A variable is true when a positive occurrence is selected.
 def assignmentFromClique (formula : SAT.Formula)
     (vertices : Finset (Vertex formula)) : SAT.Assignment :=
   fun var ↦ decide (∃ vertex ∈ vertices, literalAt formula vertex = .pos var)
@@ -173,7 +173,7 @@ lemma eval_assignmentFromClique_eq_true
         exact hcompatible hcontr
       simp [SAT.Literal.eval, assignmentFromClique, hnone]
 
--- Every clause contains a selected literal, and that literal is true.
+-- Every clause contains a selected true literal.
 theorem satisfiable_of_exists_clique (formula : SAT.Formula)
     (h : Clique.HasClique (Vertex formula)
       (reductionGraph formula) formula.length) :
